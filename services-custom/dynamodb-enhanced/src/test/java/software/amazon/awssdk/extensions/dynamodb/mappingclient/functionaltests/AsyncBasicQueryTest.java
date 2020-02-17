@@ -46,8 +46,6 @@ import software.amazon.awssdk.extensions.dynamodb.mappingclient.Key;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.Page;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.TableSchema;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.core.DefaultDynamoDbEnhancedAsyncClient;
-import software.amazon.awssdk.extensions.dynamodb.mappingclient.model.CreateTableEnhancedRequest;
-import software.amazon.awssdk.extensions.dynamodb.mappingclient.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.model.QueryEnhancedRequest;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.staticmapper.StaticTableSchema;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -123,7 +121,7 @@ public class AsyncBasicQueryTest extends LocalDynamoDbAsyncTestBase {
     private DynamoDbAsyncTable<Record> mappedTable = enhancedAsyncClient.table(getConcreteTableName("table-name"), TABLE_SCHEMA);
 
     private void insertRecords() {
-        RECORDS.forEach(record -> mappedTable.putItem(PutItemEnhancedRequest.create(record)).join());
+        RECORDS.forEach(record -> mappedTable.putItem(Record.class, r -> r.item(record)).join());
     }
 
     private static <T> List<T> drainPublisher(SdkPublisher<T> publisher, int expectedNumberOfResults) {
@@ -140,7 +138,7 @@ public class AsyncBasicQueryTest extends LocalDynamoDbAsyncTestBase {
     
     @Before
     public void createTable() {
-        mappedTable.createTable(CreateTableEnhancedRequest.create(getDefaultProvisionedThroughput())).join();
+        mappedTable.createTable(r -> r.provisionedThroughput(getDefaultProvisionedThroughput())).join();
     }
 
     @After
@@ -156,7 +154,7 @@ public class AsyncBasicQueryTest extends LocalDynamoDbAsyncTestBase {
         insertRecords();
 
         SdkPublisher<Page<Record>> publisher =
-            mappedTable.query(QueryEnhancedRequest.create(equalTo(Key.create(stringValue("id-value")))));
+            mappedTable.query(r -> r.queryConditional(equalTo(Key.create(stringValue("id-value")))));
         
         List<Page<Record>> results = drainPublisher(publisher, 1);
         Page<Record> page = results.get(0);
@@ -196,7 +194,7 @@ public class AsyncBasicQueryTest extends LocalDynamoDbAsyncTestBase {
         insertRecords();
         Key fromKey = Key.create(stringValue("id-value"), numberValue(3));
         Key toKey = Key.create(stringValue("id-value"), numberValue(5));
-        SdkPublisher<Page<Record>> publisher = mappedTable.query(QueryEnhancedRequest.create(between(fromKey, toKey)));
+        SdkPublisher<Page<Record>> publisher = mappedTable.query(r -> r.queryConditional(between(fromKey, toKey)));
 
         List<Page<Record>> results = drainPublisher(publisher, 1);
         Page<Record> page = results.get(0);
@@ -237,7 +235,7 @@ public class AsyncBasicQueryTest extends LocalDynamoDbAsyncTestBase {
     @Test
     public void queryEmpty() {
         SdkPublisher<Page<Record>> publisher =
-            mappedTable.query(QueryEnhancedRequest.create(equalTo(Key.create(stringValue("id-value")))));
+            mappedTable.query(r -> r.queryConditional(equalTo(Key.create(stringValue("id-value")))));
 
         List<Page<Record>> results = drainPublisher(publisher, 1);
         Page<Record> page = results.get(0);

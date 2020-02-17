@@ -16,6 +16,7 @@
 package software.amazon.awssdk.extensions.dynamodb.mappingclient;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import software.amazon.awssdk.annotations.SdkPublicApi;
 import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.model.CreateTableEnhancedRequest;
@@ -48,7 +49,15 @@ public interface DynamoDbAsyncTable<T> extends MappedTableResource<T> {
         throw new UnsupportedOperationException();
     }
 
-    default CompletableFuture<T> deleteItem(DeleteItemEnhancedRequest<T> request) {
+    default CompletableFuture<Void> createTable(Consumer<CreateTableEnhancedRequest.Builder> requestConsumer) {
+        throw new UnsupportedOperationException();
+    }
+
+    default CompletableFuture<T> deleteItem(DeleteItemEnhancedRequest request) {
+        throw new UnsupportedOperationException();
+    }
+
+    default CompletableFuture<T> deleteItem(Consumer<DeleteItemEnhancedRequest.Builder> requestConsumer) {
         throw new UnsupportedOperationException();
     }
 
@@ -56,7 +65,15 @@ public interface DynamoDbAsyncTable<T> extends MappedTableResource<T> {
         throw new UnsupportedOperationException();
     }
 
+    default CompletableFuture<T> getItem(Consumer<GetItemEnhancedRequest.Builder> requestConsumer) {
+        throw new UnsupportedOperationException();
+    }
+
     default SdkPublisher<Page<T>> query(QueryEnhancedRequest request) {
+        throw new UnsupportedOperationException();
+    }
+
+    default SdkPublisher<Page<T>> query(Consumer<QueryEnhancedRequest.Builder> requestConsumer) {
         throw new UnsupportedOperationException();
     }
 
@@ -64,7 +81,16 @@ public interface DynamoDbAsyncTable<T> extends MappedTableResource<T> {
         throw new UnsupportedOperationException();
     }
 
+    default CompletableFuture<Void> putItem(Class<? extends T> itemClass,
+                                            Consumer<PutItemEnhancedRequest.Builder<T>> requestConsumer) {
+        throw new UnsupportedOperationException();
+    }
+
     default SdkPublisher<Page<T>> scan(ScanEnhancedRequest request) {
+        throw new UnsupportedOperationException();
+    }
+
+    default SdkPublisher<Page<T>> scan(Consumer<ScanEnhancedRequest.Builder> requestConsumer) {
         throw new UnsupportedOperationException();
     }
 
@@ -72,4 +98,8 @@ public interface DynamoDbAsyncTable<T> extends MappedTableResource<T> {
         throw new UnsupportedOperationException();
     }
 
+    default CompletableFuture<T> updateItem(Class<? extends T> itemClass,
+                                            Consumer<UpdateItemEnhancedRequest.Builder<T>> requestConsumer) {
+        throw new UnsupportedOperationException();
+    }
 }

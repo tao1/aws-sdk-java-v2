@@ -26,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.Key;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.MapperExtension;
+import software.amazon.awssdk.extensions.dynamodb.mappingclient.PaginatedIndexOperation;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.functionaltests.models.FakeItemWithIndices;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -36,6 +37,9 @@ public class DefaultDynamoDbIndexTest {
 
     @Mock
     private MapperExtension mockMapperExtension;
+
+    @Mock
+    private PaginatedIndexOperation<?,?,?,?> mockPaginatedOperation;
 
     @Test
     public void keyFrom_secondaryIndex_partitionAndSort() {

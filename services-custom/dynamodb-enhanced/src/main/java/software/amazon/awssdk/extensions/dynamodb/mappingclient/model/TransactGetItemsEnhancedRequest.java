@@ -18,6 +18,7 @@ package software.amazon.awssdk.extensions.dynamodb.mappingclient.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.annotations.SdkPublicApi;
@@ -33,9 +34,7 @@ public final class TransactGetItemsEnhancedRequest {
     private final List<TransactGetItem> transactGetItems;
 
     private TransactGetItemsEnhancedRequest(Builder builder) {
-        this.transactGetItems = Collections.unmodifiableList(builder.itemSupplierList.stream()
-                                                                    .map(Supplier::get)
-                                                                    .collect(Collectors.toList()));
+        this.transactGetItems = getListIfExist(builder.itemSupplierList);
     }
 
     public static Builder builder() {
@@ -65,14 +64,31 @@ public final class TransactGetItemsEnhancedRequest {
         return transactGetItems != null ? transactGetItems.hashCode() : 0;
     }
 
+    private List<TransactGetItem> getListIfExist(List<Supplier<TransactGetItem>> itemSupplierList) {
+        if (itemSupplierList == null || itemSupplierList.isEmpty()) {
+            return null;
+        }
+        return Collections.unmodifiableList(itemSupplierList.stream()
+                                                            .map(Supplier::get)
+                                                            .collect(Collectors.toList()));
+    }
+
     public static final class Builder {
         private List<Supplier<TransactGetItem>> itemSupplierList = new ArrayList<>();
 
         private Builder() {
         }
 
-        public <T> Builder addGetItem(MappedTableResource<T> mappedTableResource, GetItemEnhancedRequest<T> request) {
+        public <T> Builder addGetItem(MappedTableResource<T> mappedTableResource, GetItemEnhancedRequest request) {
             itemSupplierList.add(() -> generateTransactWriteItem(mappedTableResource, GetItemOperation.create(request)));
+            return this;
+        }
+
+        public <T> Builder addGetItem(MappedTableResource<T> mappedTableResource,
+                                      Consumer<GetItemEnhancedRequest.Builder> requestConsumer) {
+            GetItemEnhancedRequest.Builder builder = GetItemEnhancedRequest.builder();
+            requestConsumer.accept(builder);
+            itemSupplierList.add(() -> generateTransactWriteItem(mappedTableResource, GetItemOperation.create(builder.build())));
             return this;
         }
 

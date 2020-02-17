@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.annotations.SdkPublicApi;
@@ -35,14 +36,12 @@ public final class WriteBatch {
     private final List<WriteRequest> writeRequests;
 
     private WriteBatch(BuilderImpl<?> builder) {
-        this.tableName = builder.mappedTableResource.tableName();
-        this.writeRequests = Collections.unmodifiableList(builder.itemSupplierList.stream()
-                                                                                  .map(Supplier::get)
-                                                                                  .collect(Collectors.toList()));
+        this.tableName = builder.mappedTableResource != null ? builder.mappedTableResource.tableName() : null;
+        this.writeRequests = getListIfExist(builder.itemSupplierList);
     }
 
     public static <T> Builder<T> builder(Class<? extends T> itemClass) {
-        return new BuilderImpl<>();
+        return new BuilderImpl<>(itemClass);
     }
 
     public String tableName() {
@@ -82,19 +81,25 @@ public final class WriteBatch {
     public interface Builder<T> {
         Builder<T> mappedTableResource(MappedTableResource<T> mappedTableResource);
 
-        Builder<T> addDeleteItem(DeleteItemEnhancedRequest<T> request);
+        Builder<T> addDeleteItem(DeleteItemEnhancedRequest request);
+
+        Builder<T> addDeleteItem(Consumer<DeleteItemEnhancedRequest.Builder> requestConsumer);
 
         Builder<T> addPutItem(PutItemEnhancedRequest<T> request);
+
+        Builder<T> addPutItem(Consumer<PutItemEnhancedRequest.Builder<T>> requestConsumer);
 
         WriteBatch build();
     }
 
     private static final class BuilderImpl<T> implements Builder<T> {
 
+        private Class<? extends T> itemClass;
         private List<Supplier<WriteRequest>> itemSupplierList = new ArrayList<>();
         private MappedTableResource<T> mappedTableResource;
 
-        private BuilderImpl() {
+        private BuilderImpl(Class<? extends T> itemClass) {
+            this.itemClass = itemClass;
         }
 
         public Builder<T> mappedTableResource(MappedTableResource<T> mappedTableResource) {
@@ -102,13 +107,28 @@ public final class WriteBatch {
             return this;
         }
 
-        public Builder<T> addDeleteItem(DeleteItemEnhancedRequest<T> request) {
+        public Builder<T> addDeleteItem(DeleteItemEnhancedRequest request) {
             itemSupplierList.add(() -> generateWriteRequest(() -> mappedTableResource, DeleteItemOperation.create(request)));
+            return this;
+        }
+
+        public Builder<T> addDeleteItem(Consumer<DeleteItemEnhancedRequest.Builder> requestConsumer) {
+            DeleteItemEnhancedRequest.Builder builder = DeleteItemEnhancedRequest.builder();
+            requestConsumer.accept(builder);
+            itemSupplierList.add(() -> generateWriteRequest(() -> mappedTableResource,
+                                                            DeleteItemOperation.create(builder.build())));
             return this;
         }
 
         public Builder<T> addPutItem(PutItemEnhancedRequest<T> request) {
             itemSupplierList.add(() -> generateWriteRequest(() -> mappedTableResource, PutItemOperation.create(request)));
+            return this;
+        }
+
+        public Builder<T> addPutItem(Consumer<PutItemEnhancedRequest.Builder<T>> requestConsumer) {
+            PutItemEnhancedRequest.Builder<T> builder = PutItemEnhancedRequest.builder(this.itemClass);
+            requestConsumer.accept(builder);
+            itemSupplierList.add(() -> generateWriteRequest(() -> mappedTableResource, PutItemOperation.create(builder.build())));
             return this;
         }
 
@@ -122,5 +142,14 @@ public final class WriteBatch {
                                                   OperationContext.create(mappedTableResourceSupplier.get().tableName()),
                                                   mappedTableResourceSupplier.get().mapperExtension());
         }
+    }
+
+    private List<WriteRequest> getListIfExist(List<Supplier<WriteRequest>> itemSupplierList) {
+        if (itemSupplierList == null || itemSupplierList.isEmpty()) {
+            return null;
+        }
+        return Collections.unmodifiableList(itemSupplierList.stream()
+                                                            .map(Supplier::get)
+                                                            .collect(Collectors.toList()));
     }
 }
