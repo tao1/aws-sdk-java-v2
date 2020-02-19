@@ -170,18 +170,6 @@ public class AsyncIndexQueryTest extends LocalDynamoDbAsyncTestBase {
         RECORDS.forEach(record -> mappedTable.putItem(Record.class, r -> r.item(record)).join());
     }
 
-    private static <T> List<T> drainPublisher(SdkPublisher<T> publisher, int expectedNumberOfResults) {
-        BufferingSubscriber<T> subscriber = new BufferingSubscriber<>();
-        publisher.subscribe(subscriber);
-        subscriber.waitForCompletion(1000L);
-
-        assertThat(subscriber.isCompleted(), is(true));
-        assertThat(subscriber.bufferedError(), is(nullValue()));
-        assertThat(subscriber.bufferedItems().size(), is(expectedNumberOfResults));
-
-        return subscriber.bufferedItems();
-    }
-
     @Before
     public void createTable() {
         mappedTable.createTable(CreateTableEnhancedRequest.builder()

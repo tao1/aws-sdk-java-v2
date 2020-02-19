@@ -242,7 +242,7 @@ public class IndexScanTest extends LocalDynamoDbSyncTestBase {
 
     @Test
     public void scanEmpty() {
-        Iterator<Page<Record>> results = keysOnlyMappedIndex.scan(r -> {}).iterator();
+        Iterator<Page<Record>> results = keysOnlyMappedIndex.scan().iterator();
         assertThat(results.hasNext(), is(true));
         Page<Record> page = results.next();
         assertThat(results.hasNext(), is(false));

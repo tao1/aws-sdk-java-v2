@@ -15,12 +15,12 @@
 
 package software.amazon.awssdk.extensions.dynamodb.mappingclient.model;
 
+import static software.amazon.awssdk.extensions.dynamodb.mappingclient.core.Utils.getListIfExist;
+
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import software.amazon.awssdk.annotations.SdkPublicApi;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.MappedTableResource;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.OperationContext;
@@ -66,15 +66,6 @@ public final class TransactWriteItemsEnhancedRequest {
         return transactWriteItems != null ? transactWriteItems.hashCode() : 0;
     }
 
-    private List<TransactWriteItem> getListIfExist(List<Supplier<TransactWriteItem>> itemSupplierList) {
-        if (itemSupplierList == null || itemSupplierList.isEmpty()) {
-            return null;
-        }
-        return Collections.unmodifiableList(itemSupplierList.stream()
-                                                            .map(Supplier::get)
-                                                            .collect(Collectors.toList()));
-    }
-
     public static final class Builder {
         private List<Supplier<TransactWriteItem>> itemSupplierList = new ArrayList<>();
 
@@ -90,8 +81,7 @@ public final class TransactWriteItemsEnhancedRequest {
                                              Consumer<ConditionCheck.Builder> requestConsumer) {
             ConditionCheck.Builder builder = ConditionCheck.builder();
             requestConsumer.accept(builder);
-            itemSupplierList.add(() -> generateTransactWriteItem(mappedTableResource, builder.build()));
-            return this;
+            return addConditionCheck(mappedTableResource, builder.build());
         }
 
         public <T> Builder addDeleteItem(MappedTableResource<T> mappedTableResource, DeleteItemEnhancedRequest request) {
@@ -103,9 +93,7 @@ public final class TransactWriteItemsEnhancedRequest {
                                       Consumer<DeleteItemEnhancedRequest.Builder> requestConsumer) {
             DeleteItemEnhancedRequest.Builder builder = DeleteItemEnhancedRequest.builder();
             requestConsumer.accept(builder);
-            itemSupplierList.add(() -> generateTransactWriteItem(mappedTableResource,
-                                                                 DeleteItemOperation.create(builder.build())));
-            return this;
+            return addDeleteItem(mappedTableResource, builder.build());
         }
 
         public <T> Builder addPutItem(MappedTableResource<T> mappedTableResource, PutItemEnhancedRequest<T> request) {
@@ -117,8 +105,7 @@ public final class TransactWriteItemsEnhancedRequest {
                                       Consumer<PutItemEnhancedRequest.Builder<T>> requestConsumer) {
             PutItemEnhancedRequest.Builder<T> builder = PutItemEnhancedRequest.builder(itemClass);
             requestConsumer.accept(builder);
-            itemSupplierList.add(() -> generateTransactWriteItem(mappedTableResource, PutItemOperation.create(builder.build())));
-            return this;
+            return addPutItem(mappedTableResource, builder.build());
         }
 
         public <T> Builder addUpdateItem(MappedTableResource<T> mappedTableResource, UpdateItemEnhancedRequest<T> request) {
@@ -130,9 +117,7 @@ public final class TransactWriteItemsEnhancedRequest {
                                          Consumer<UpdateItemEnhancedRequest.Builder<T>> requestConsumer) {
             UpdateItemEnhancedRequest.Builder<T> builder = UpdateItemEnhancedRequest.builder(itemClass);
             requestConsumer.accept(builder);
-            itemSupplierList.add(() -> generateTransactWriteItem(mappedTableResource,
-                                                                 UpdateItemOperation.create(builder.build())));
-            return this;
+            return addUpdateItem(mappedTableResource, builder.build());
         }
 
         public TransactWriteItemsEnhancedRequest build() {

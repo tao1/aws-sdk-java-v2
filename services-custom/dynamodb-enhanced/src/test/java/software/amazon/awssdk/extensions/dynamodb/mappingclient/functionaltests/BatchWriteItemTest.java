@@ -250,28 +250,20 @@ public class BatchWriteItemTest extends LocalDynamoDbSyncTestBase {
         assertThat(record2, is(nullValue()));
     }
 
-
     @Test
     public void mixedCommands() {
         mappedTable1.putItem(Record1.class, r -> r.item(RECORDS_1.get(0)));
         mappedTable2.putItem(Record2.class, r -> r.item(RECORDS_2.get(0)));
 
-        BatchWriteItemEnhancedRequest batchWriteItemEnhancedRequest =
-            BatchWriteItemEnhancedRequest.builder()
-                                         .writeBatches(
-                                             WriteBatch.builder(Record1.class)
-                                                       .mappedTableResource(mappedTable1)
-                                                       .addPutItem(r -> r.item(RECORDS_1.get(1)))
-                                                       .build(),
-                                             WriteBatch.builder(Record2.class)
-                                                       .mappedTableResource(mappedTable2)
-                                                       .addDeleteItem(DeleteItemEnhancedRequest.builder()
-                                                                                               .key(Key.create(numberValue(0)))
-                                                                                               .build())
-                                                       .build())
-                                         .build();
-
-        enhancedClient.batchWriteItem(batchWriteItemEnhancedRequest);
+        enhancedClient.batchWriteItem(r -> r.writeBatches(
+            WriteBatch.builder(Record1.class)
+                      .mappedTableResource(mappedTable1)
+                      .addPutItem(i -> i.item(RECORDS_1.get(1)))
+                      .build(),
+            WriteBatch.builder(Record2.class)
+                      .mappedTableResource(mappedTable2)
+                      .addDeleteItem(i -> i.key(Key.create(numberValue(0))))
+                      .build()));
 
         assertThat(mappedTable1.getItem(r -> r.key(Key.create(numberValue(0)))), is(RECORDS_1.get(0)));
         assertThat(mappedTable1.getItem(r -> r.key(Key.create(numberValue(1)))), is(RECORDS_1.get(1)));

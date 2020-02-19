@@ -88,7 +88,7 @@ most of the features available in the low-level DynamoDB SDK client.
 
    ```java
    // CreateTable
-   customerTable.createTable(() -> {});
+   customerTable.createTable();
    customerTable.createTable(CreateTableEnhancedRequest.builder().build());
    
    // GetItem
@@ -120,7 +120,7 @@ most of the features available in the low-level DynamoDB SDK client.
                                                                                 .queryConditional(equalTo(Key.create(stringValue("a123"))))
                                                                                 .build());
    // Scan
-   Iterable<Page<Customer>> customers = customerTable.scan(() -> {});
+   Iterable<Page<Customer>> customers = customerTable.scan();
    Iterable<Page<Customer>> customers = customerTable.scan(ScanEnhancedRequest.builder().build());
    
    // BatchGetItem

@@ -53,6 +53,10 @@ public interface DynamoDbAsyncTable<T> extends MappedTableResource<T> {
         throw new UnsupportedOperationException();
     }
 
+    default CompletableFuture<Void> createTable() {
+        throw new UnsupportedOperationException();
+    }
+
     default CompletableFuture<T> deleteItem(DeleteItemEnhancedRequest request) {
         throw new UnsupportedOperationException();
     }
@@ -91,6 +95,10 @@ public interface DynamoDbAsyncTable<T> extends MappedTableResource<T> {
     }
 
     default SdkPublisher<Page<T>> scan(Consumer<ScanEnhancedRequest.Builder> requestConsumer) {
+        throw new UnsupportedOperationException();
+    }
+
+    default SdkPublisher<Page<T>> scan() {
         throw new UnsupportedOperationException();
     }
 

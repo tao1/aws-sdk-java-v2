@@ -158,8 +158,7 @@ public final class ReadBatch {
         public Builder<T> addGetItem(Consumer<GetItemEnhancedRequest.Builder> requestConsumer) {
             GetItemEnhancedRequest.Builder builder = GetItemEnhancedRequest.builder();
             requestConsumer.accept(builder);
-            requests.add(builder.build());
-            return this;
+            return addGetItem(builder.build());
         }
 
         public ReadBatch build() {

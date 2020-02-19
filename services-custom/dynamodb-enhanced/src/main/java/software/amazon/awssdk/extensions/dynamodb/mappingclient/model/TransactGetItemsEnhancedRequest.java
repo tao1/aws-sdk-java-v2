@@ -15,12 +15,12 @@
 
 package software.amazon.awssdk.extensions.dynamodb.mappingclient.model;
 
+import static software.amazon.awssdk.extensions.dynamodb.mappingclient.core.Utils.getListIfExist;
+
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import software.amazon.awssdk.annotations.SdkPublicApi;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.MappedTableResource;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.OperationContext;
@@ -64,15 +64,6 @@ public final class TransactGetItemsEnhancedRequest {
         return transactGetItems != null ? transactGetItems.hashCode() : 0;
     }
 
-    private List<TransactGetItem> getListIfExist(List<Supplier<TransactGetItem>> itemSupplierList) {
-        if (itemSupplierList == null || itemSupplierList.isEmpty()) {
-            return null;
-        }
-        return Collections.unmodifiableList(itemSupplierList.stream()
-                                                            .map(Supplier::get)
-                                                            .collect(Collectors.toList()));
-    }
-
     public static final class Builder {
         private List<Supplier<TransactGetItem>> itemSupplierList = new ArrayList<>();
 
@@ -88,8 +79,7 @@ public final class TransactGetItemsEnhancedRequest {
                                       Consumer<GetItemEnhancedRequest.Builder> requestConsumer) {
             GetItemEnhancedRequest.Builder builder = GetItemEnhancedRequest.builder();
             requestConsumer.accept(builder);
-            itemSupplierList.add(() -> generateTransactWriteItem(mappedTableResource, GetItemOperation.create(builder.build())));
-            return this;
+            return addGetItem(mappedTableResource, builder.build());
         }
 
         public TransactGetItemsEnhancedRequest build() {

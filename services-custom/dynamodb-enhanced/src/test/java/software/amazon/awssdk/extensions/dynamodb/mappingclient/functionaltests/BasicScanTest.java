@@ -179,7 +179,7 @@ public class BasicScanTest extends LocalDynamoDbSyncTestBase {
 
     @Test
     public void scanEmpty() {
-        Iterator<Page<Record>> results = mappedTable.scan(r -> {}).iterator();
+        Iterator<Page<Record>> results = mappedTable.scan().iterator();
         assertThat(results.hasNext(), is(true));
         Page<Record> page = results.next();
         assertThat(results.hasNext(), is(false));

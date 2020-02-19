@@ -52,6 +52,10 @@ public interface DynamoDbTable<T> extends MappedTableResource<T> {
         throw new UnsupportedOperationException();
     }
 
+    default Void createTable() {
+        throw new UnsupportedOperationException();
+    }
+
     default T deleteItem(DeleteItemEnhancedRequest request) {
         throw new UnsupportedOperationException();
     }
@@ -89,6 +93,10 @@ public interface DynamoDbTable<T> extends MappedTableResource<T> {
     }
 
     default SdkIterable<Page<T>> scan(Consumer<ScanEnhancedRequest.Builder> requestConsumer) {
+        throw new UnsupportedOperationException();
+    }
+
+    default SdkIterable<Page<T>> scan() {
         throw new UnsupportedOperationException();
     }
 

@@ -101,6 +101,11 @@ public class DefaultDynamoDbTable<T> implements DynamoDbTable<T> {
     }
 
     @Override
+    public Void createTable() {
+        return createTable(CreateTableEnhancedRequest.builder().build());
+    }
+
+    @Override
     public T deleteItem(DeleteItemEnhancedRequest request) {
         TableOperation<T, ?, ?, T> operation = DeleteItemOperation.create(request);
         return operation.executeOnPrimaryIndex(tableSchema, tableName, mapperExtension, dynamoDbClient);
@@ -163,6 +168,11 @@ public class DefaultDynamoDbTable<T> implements DynamoDbTable<T> {
         ScanEnhancedRequest.Builder builder = ScanEnhancedRequest.builder();
         requestConsumer.accept(builder);
         return scan(builder.build());
+    }
+
+    @Override
+    public SdkIterable<Page<T>> scan() {
+        return scan(ScanEnhancedRequest.builder().build());
     }
 
     @Override

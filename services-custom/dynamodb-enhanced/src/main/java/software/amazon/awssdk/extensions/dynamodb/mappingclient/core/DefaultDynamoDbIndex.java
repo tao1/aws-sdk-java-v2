@@ -79,6 +79,11 @@ public class DefaultDynamoDbIndex<T> implements DynamoDbIndex<T> {
     }
 
     @Override
+    public SdkIterable<Page<T>> scan() {
+        return scan(ScanEnhancedRequest.builder().build());
+    }
+
+    @Override
     public MapperExtension mapperExtension() {
         return this.mapperExtension;
     }

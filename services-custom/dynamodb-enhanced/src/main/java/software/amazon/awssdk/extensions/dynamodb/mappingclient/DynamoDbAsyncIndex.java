@@ -46,6 +46,10 @@ public interface DynamoDbAsyncIndex<T> {
         throw new UnsupportedOperationException();
     }
 
+    default SdkPublisher<Page<T>> scan() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Gets the {@link MapperExtension} associated with this mapped resource.
      * @return The {@link MapperExtension} associated with this mapped resource.

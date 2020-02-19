@@ -15,13 +15,13 @@
 
 package software.amazon.awssdk.extensions.dynamodb.mappingclient.model;
 
+import static software.amazon.awssdk.extensions.dynamodb.mappingclient.core.Utils.getListIfExist;
+
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import software.amazon.awssdk.annotations.SdkPublicApi;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.BatchableWriteOperation;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.MappedTableResource;
@@ -115,9 +115,7 @@ public final class WriteBatch {
         public Builder<T> addDeleteItem(Consumer<DeleteItemEnhancedRequest.Builder> requestConsumer) {
             DeleteItemEnhancedRequest.Builder builder = DeleteItemEnhancedRequest.builder();
             requestConsumer.accept(builder);
-            itemSupplierList.add(() -> generateWriteRequest(() -> mappedTableResource,
-                                                            DeleteItemOperation.create(builder.build())));
-            return this;
+            return addDeleteItem(builder.build());
         }
 
         public Builder<T> addPutItem(PutItemEnhancedRequest<T> request) {
@@ -128,8 +126,7 @@ public final class WriteBatch {
         public Builder<T> addPutItem(Consumer<PutItemEnhancedRequest.Builder<T>> requestConsumer) {
             PutItemEnhancedRequest.Builder<T> builder = PutItemEnhancedRequest.builder(this.itemClass);
             requestConsumer.accept(builder);
-            itemSupplierList.add(() -> generateWriteRequest(() -> mappedTableResource, PutItemOperation.create(builder.build())));
-            return this;
+            return addPutItem(builder.build());
         }
 
         public WriteBatch build() {
@@ -144,12 +141,4 @@ public final class WriteBatch {
         }
     }
 
-    private List<WriteRequest> getListIfExist(List<Supplier<WriteRequest>> itemSupplierList) {
-        if (itemSupplierList == null || itemSupplierList.isEmpty()) {
-            return null;
-        }
-        return Collections.unmodifiableList(itemSupplierList.stream()
-                                                            .map(Supplier::get)
-                                                            .collect(Collectors.toList()));
-    }
 }

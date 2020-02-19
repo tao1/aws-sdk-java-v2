@@ -227,25 +227,6 @@ public class AsyncBasicCrudTest extends LocalDynamoDbAsyncTestBase {
     }
 
     @Test
-    public void getItemInterfaceToOperationSucceeds() {
-        mappedTable.getItem(r -> r.key(Key.create(stringValue("id-value"), stringValue("sort-value")))).join();
-        mappedTable.getItem(GetItemEnhancedRequest.builder()
-                                                  .key(Key.create(stringValue("id-value"), stringValue("sort-value")))
-                                                  .build()).join();
-    }
-
-    @Test
-    public void putItemInterfaceToOperationSucceeds() {
-        Record record = new Record()
-            .setId("id-value")
-            .setSort("sort-value")
-            .setAttribute("one");
-
-        mappedTable.putItem(Record.class, r -> r.item(record)).join();
-        mappedTable.putItem(PutItemEnhancedRequest.builder(Record.class).item(record).build()).join();
-    }
-
-    @Test
     public void putThenGetItemUsingKey() {
         Record record = new Record()
                               .setId("id-value")
@@ -382,14 +363,6 @@ public class AsyncBasicCrudTest extends LocalDynamoDbAsyncTestBase {
     }
 
     @Test
-    public void deleteItemInterfaceToOperationSucceeds() {
-        mappedTable.deleteItem(r -> r.key(Key.create(stringValue("id-value"), stringValue("sort-value")))).join();
-        mappedTable.deleteItem(DeleteItemEnhancedRequest.builder()
-                                                        .key(Key.create(stringValue("id-value"), stringValue("sort-value")))
-                                                        .build()).join();
-    }
-
-    @Test
     public void deleteNonExistentItem() {
         Record result = mappedTable.deleteItem(r -> r.key(Key.create(stringValue("id-value"), stringValue("sort-value")))).join();
         assertThat(result, is(nullValue()));
@@ -449,17 +422,6 @@ public class AsyncBasicCrudTest extends LocalDynamoDbAsyncTestBase {
         mappedTable.deleteItem(DeleteItemEnhancedRequest.builder().key(mappedTable.keyFrom(record))
                                                .conditionExpression(conditionExpression)
                                                .build()).join();
-    }
-
-    @Test
-    public void updateItemInterfaceToOperationSucceeds() {
-        Record record = new Record()
-            .setId("id-value")
-            .setSort("sort-value")
-            .setAttribute("one");
-
-        mappedTable.updateItem(Record.class, r -> r.item(record)).join();
-        mappedTable.updateItem(UpdateItemEnhancedRequest.builder(Record.class).item(record).build()).join();
     }
 
     @Test

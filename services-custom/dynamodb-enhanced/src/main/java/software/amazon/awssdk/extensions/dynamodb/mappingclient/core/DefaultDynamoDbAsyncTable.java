@@ -101,6 +101,12 @@ public final class DefaultDynamoDbAsyncTable<T> implements DynamoDbAsyncTable<T>
         return createTable(builder.build());
     }
 
+
+    @Override
+    public CompletableFuture<Void> createTable() {
+        return createTable(CreateTableEnhancedRequest.builder().build());
+    }
+
     @Override
     public CompletableFuture<T> deleteItem(DeleteItemEnhancedRequest request) {
         TableOperation<T, ?, ?, T> operation = DeleteItemOperation.create(request);
@@ -165,6 +171,11 @@ public final class DefaultDynamoDbAsyncTable<T> implements DynamoDbAsyncTable<T>
         ScanEnhancedRequest.Builder builder = ScanEnhancedRequest.builder();
         requestConsumer.accept(builder);
         return scan(builder.build());
+    }
+
+    @Override
+    public SdkPublisher<Page<T>> scan() {
+        return scan(ScanEnhancedRequest.builder().build());
     }
 
     @Override

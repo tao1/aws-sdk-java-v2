@@ -30,7 +30,6 @@ import static software.amazon.awssdk.extensions.dynamodb.mappingclient.staticmap
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,9 +42,6 @@ import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.DynamoDbAsyncIndex;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.DynamoDbAsyncTable;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.DynamoDbEnhancedAsyncClient;
-import software.amazon.awssdk.extensions.dynamodb.mappingclient.DynamoDbEnhancedClient;
-import software.amazon.awssdk.extensions.dynamodb.mappingclient.DynamoDbIndex;
-import software.amazon.awssdk.extensions.dynamodb.mappingclient.DynamoDbTable;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.Expression;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.Page;
 import software.amazon.awssdk.extensions.dynamodb.mappingclient.TableSchema;
@@ -173,18 +169,6 @@ public class AsyncIndexScanTest extends LocalDynamoDbAsyncTestBase {
         RECORDS.forEach(record -> mappedTable.putItem(Record.class, r -> r.item(record)).join());
     }
 
-    private static <T> List<T> drainPublisher(SdkPublisher<T> publisher, int expectedNumberOfResults) {
-        BufferingSubscriber<T> subscriber = new BufferingSubscriber<>();
-        publisher.subscribe(subscriber);
-        subscriber.waitForCompletion(1000L);
-
-        assertThat(subscriber.isCompleted(), is(true));
-        assertThat(subscriber.bufferedError(), is(nullValue()));
-        assertThat(subscriber.bufferedItems().size(), is(expectedNumberOfResults));
-
-        return subscriber.bufferedItems();
-    }
-
     @Before
     public void createTable() {
         mappedTable.createTable(r -> r.provisionedThroughput(getDefaultProvisionedThroughput())
@@ -210,7 +194,7 @@ public class AsyncIndexScanTest extends LocalDynamoDbAsyncTestBase {
         Page<Record> page = results.get(0);
 
         assertThat(page.items(), is(KEYS_ONLY_RECORDS));
-    //    assertThat(page.lastEvaluatedKey(), is(nullValue()));
+        assertThat(page.lastEvaluatedKey(), is(nullValue()));
     }
 
     @Test
@@ -258,7 +242,7 @@ public class AsyncIndexScanTest extends LocalDynamoDbAsyncTestBase {
 
     @Test
     public void scanEmpty() {
-        SdkPublisher<Page<Record>> publisher = keysOnlyMappedIndex.scan(r -> {});
+        SdkPublisher<Page<Record>> publisher = keysOnlyMappedIndex.scan();
         List<Page<Record>> results = drainPublisher(publisher, 1);
         Page<Record> page = results.get(0);
 

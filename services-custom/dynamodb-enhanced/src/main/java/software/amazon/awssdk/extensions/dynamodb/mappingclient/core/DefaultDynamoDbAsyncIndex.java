@@ -79,6 +79,11 @@ public final class DefaultDynamoDbAsyncIndex<T> implements DynamoDbAsyncIndex<T>
     }
 
     @Override
+    public SdkPublisher<Page<T>> scan() {
+        return scan(ScanEnhancedRequest.builder().build());
+    }
+
+    @Override
     public MapperExtension mapperExtension() {
         return this.mapperExtension;
     }
