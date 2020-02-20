@@ -1,3 +1,54 @@
+# __2.10.68__ __2020-02-19__
+## __AWS Lambda__
+  - ### Features
+    - AWS Lambda now supports Ruby 2.7
+
+## __AWS SDK for Java v2__
+  - ### Features
+    - Updated service endpoint metadata.
+
+## __AWS Service Catalog__
+  - ### Features
+    - "ListPortfolioAccess" API now has a new optional parameter "OrganizationParentId". When it is provided and if the portfolio with the "PortfolioId" given was shared with an organization or organizational unit with "OrganizationParentId", all accounts in the organization sub-tree under parent which inherit an organizational portfolio share will be listed, rather than all accounts with external shares. To accommodate long lists returned from the new option, the API now supports pagination.
+
+## __Auto Scaling__
+  - ### Features
+    - Doc update for EC2 Auto Scaling: Add Enabled parameter for PutScalingPolicy
+
+# __2.10.67__ __2020-02-18__
+## __Amazon Chime__
+  - ### Features
+    - Added AudioFallbackUrl to support Chime SDK client.
+
+## __Amazon Relational Database Service__
+  - ### Features
+    - This release supports Microsoft Active Directory authentication for Amazon Aurora.
+
+## __Auto Scaling__
+  - ### Features
+    - Amazon EC2 Auto Scaling now supports the ability to enable/disable target tracking, step scaling, and simple scaling policies.
+
+# __2.10.66__ __2020-02-17__
+## __AWS Cloud9__
+  - ### Features
+    - AWS Cloud9 now supports the ability to tag Cloud9 development environments.
+
+## __AWS SDK for Java v2__
+  - ### Features
+    - Updated service endpoint metadata.
+
+## __Amazon DynamoDB__
+  - ### Features
+    - Amazon DynamoDB enables you to restore your DynamoDB backup or table data across AWS Regions such that the restored table is created in a different AWS Region from where the source table or backup resides. You can do cross-region restores between AWS commercial Regions, AWS China Regions, and AWS GovCloud (US) Regions.
+
+## __Amazon Elastic Compute Cloud__
+  - ### Features
+    - Documentation updates for EC2
+
+## __Amazon Rekognition__
+  - ### Features
+    - This update adds the ability to detect text in videos and adds filters to image and video text detection.
+
 # __2.10.65__ __2020-02-14__
 ## __AWS MediaTailor__
   - ### Features
