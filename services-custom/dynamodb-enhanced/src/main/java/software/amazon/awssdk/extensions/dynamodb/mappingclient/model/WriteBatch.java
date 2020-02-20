@@ -15,7 +15,7 @@
 
 package software.amazon.awssdk.extensions.dynamodb.mappingclient.model;
 
-import static software.amazon.awssdk.extensions.dynamodb.mappingclient.core.Utils.getListIfExist;
+import static software.amazon.awssdk.extensions.dynamodb.mappingclient.core.Utils.getItemsFromSupplier;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,7 +37,7 @@ public final class WriteBatch {
 
     private WriteBatch(BuilderImpl<?> builder) {
         this.tableName = builder.mappedTableResource != null ? builder.mappedTableResource.tableName() : null;
-        this.writeRequests = getListIfExist(builder.itemSupplierList);
+        this.writeRequests = getItemsFromSupplier(builder.itemSupplierList);
     }
 
     public static <T> Builder<T> builder(Class<? extends T> itemClass) {

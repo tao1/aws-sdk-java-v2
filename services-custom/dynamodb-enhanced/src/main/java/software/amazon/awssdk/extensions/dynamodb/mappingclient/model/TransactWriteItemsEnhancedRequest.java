@@ -15,7 +15,7 @@
 
 package software.amazon.awssdk.extensions.dynamodb.mappingclient.model;
 
-import static software.amazon.awssdk.extensions.dynamodb.mappingclient.core.Utils.getListIfExist;
+import static software.amazon.awssdk.extensions.dynamodb.mappingclient.core.Utils.getItemsFromSupplier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +36,7 @@ public final class TransactWriteItemsEnhancedRequest {
     private final List<TransactWriteItem> transactWriteItems;
 
     private TransactWriteItemsEnhancedRequest(Builder builder) {
-        this.transactWriteItems = getListIfExist(builder.itemSupplierList);
+        this.transactWriteItems = getItemsFromSupplier(builder.itemSupplierList);
     }
 
     public static Builder builder() {

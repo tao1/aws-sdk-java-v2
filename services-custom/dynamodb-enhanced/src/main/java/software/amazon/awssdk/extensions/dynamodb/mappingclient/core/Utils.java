@@ -120,7 +120,7 @@ public final class Utils {
                            .orElseGet(() -> Key.create(partitionKeyValue));
     }
 
-    public static <T> List<T> getListIfExist(List<Supplier<T>> itemSupplierList) {
+    public static <T> List<T> getItemsFromSupplier(List<Supplier<T>> itemSupplierList) {
         if (itemSupplierList == null || itemSupplierList.isEmpty()) {
             return null;
         }
