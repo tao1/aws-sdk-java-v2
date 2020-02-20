@@ -39,6 +39,7 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.handler.timeout.WriteTimeoutException;
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
@@ -183,7 +184,7 @@ public class ResponseHandler extends SimpleChannelInboundHandler<HttpObject> {
     private static ByteBuffer copyToByteBuffer(ByteBuf byteBuf) {
         ByteBuffer bb = ByteBuffer.allocate(byteBuf.readableBytes());
         byteBuf.getBytes(byteBuf.readerIndex(), bb);
-        bb.flip();
+        ((Buffer)bb).flip();
         return bb;
     }
 

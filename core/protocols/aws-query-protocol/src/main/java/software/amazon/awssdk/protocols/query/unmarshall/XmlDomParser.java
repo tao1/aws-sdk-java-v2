@@ -34,7 +34,12 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 @SdkProtectedApi
 public final class XmlDomParser {
 
-    private static final ThreadLocal<XMLInputFactory> FACTORY = ThreadLocal.withInitial(XmlDomParser::createXmlInputFactory);
+    private static final ThreadLocal<XMLInputFactory> FACTORY = new ThreadLocal<XMLInputFactory>() {
+        @Override
+        protected XMLInputFactory initialValue() {
+            return XmlDomParser.createXmlInputFactory();
+        }
+    };
 
     private XmlDomParser() {
     }

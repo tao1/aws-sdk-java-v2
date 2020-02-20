@@ -44,6 +44,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
@@ -479,7 +480,7 @@ public final class NettyRequestExecutor {
 
                     try {
                         int newLimit = clampedBufferLimit(contentBytes.remaining());
-                        contentBytes.limit(newLimit);
+                        ((Buffer)contentBytes).limit(newLimit);
                         ByteBuf contentByteBuf = Unpooled.wrappedBuffer(contentBytes);
                         HttpContent content = new DefaultHttpContent(contentByteBuf);
 

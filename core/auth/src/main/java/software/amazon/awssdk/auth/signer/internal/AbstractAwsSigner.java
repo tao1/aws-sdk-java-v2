@@ -52,20 +52,19 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 @SdkInternalApi
 public abstract class AbstractAwsSigner implements Signer {
 
-    private static final ThreadLocal<MessageDigest> SHA256_MESSAGE_DIGEST;
-
-    static {
-        SHA256_MESSAGE_DIGEST = ThreadLocal.withInitial(() -> {
+    private static final ThreadLocal<MessageDigest> SHA256_MESSAGE_DIGEST = new ThreadLocal<MessageDigest>() {
+        @Override
+        protected MessageDigest initialValue() {
             try {
                 return MessageDigest.getInstance("SHA-256");
             } catch (NoSuchAlgorithmException e) {
                 throw SdkClientException.builder()
-                                        .message("Unable to get SHA256 Function" + e.getMessage())
-                                        .cause(e)
-                                        .build();
+                        .message("Unable to get SHA256 Function" + e.getMessage())
+                        .cause(e)
+                        .build();
             }
-        });
-    }
+        }
+    };
 
     private static byte[] doHash(String text) throws SdkClientException {
         try {
