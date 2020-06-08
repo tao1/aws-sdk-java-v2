@@ -32,6 +32,7 @@ public class DefaultJsonContentTypeResolver implements JsonContentTypeResolver {
 
     @Override
     public String resolveContentType(AwsJsonProtocolMetadata protocolMetadata) {
+        //Changing this to 'application/json' may break clients expecting 'application/x-amz-json-1.1'
         return prefix + protocolMetadata.protocolVersion();
     }
 }

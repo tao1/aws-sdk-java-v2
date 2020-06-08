@@ -165,7 +165,7 @@
         {"shape":"ResourceExistsException"},
         {"shape":"InternalFailureException"}
       ],
-      "documentation":"<p>Creates and starts a new SPICE ingestion on a dataset</p> <p>Any ingestions operating on tagged datasets inherit the same tags automatically for use in access control. For an example, see <a href=\"https://aws.example.com/premiumsupport/knowledge-center/iam-ec2-resource-tags/\">How do I create an IAM policy to control access to Amazon EC2 resources using tags?</a> in the AWS Knowledge Center. Tags are visible on the tagged dataset, but not on the ingestion resource.</p>"
+      "documentation":"<p>Creates and starts a new SPICE ingestion on a dataset</p> <p>Any ingestions operating on tagged datasets inherit the same tags automatically for use in access control. For an example, see <a href=\"https://aws.amazon.com/premiumsupport/knowledge-center/iam-ec2-resource-tags/\">How do I create an IAM policy to control access to Amazon EC2 resources using tags?</a> in the AWS Knowledge Center. Tags are visible on the tagged dataset, but not on the ingestion resource.</p>"
     },
     "CreateTemplate":{
       "name":"CreateTemplate",
@@ -929,6 +929,24 @@
         {"shape":"ResourceUnavailableException"}
       ],
       "documentation":"<p>Creates an Amazon QuickSight user, whose identity is associated with the AWS Identity and Access Management (IAM) identity or role specified in the request. </p>"
+    },
+    "SearchDashboards":{
+      "name":"SearchDashboards",
+      "http":{
+        "method":"POST",
+        "requestUri":"/accounts/{AwsAccountId}/search/dashboards"
+      },
+      "input":{"shape":"SearchDashboardsRequest"},
+      "output":{"shape":"SearchDashboardsResponse"},
+      "errors":[
+        {"shape":"ThrottlingException"},
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"InvalidParameterValueException"},
+        {"shape":"UnsupportedUserEditionException"},
+        {"shape":"InvalidNextTokenException"},
+        {"shape":"InternalFailureException"}
+      ],
+      "documentation":"<p>Searchs for dashboards that belong to a user. </p>"
     },
     "TagResource":{
       "name":"TagResource",
@@ -2277,7 +2295,7 @@
         },
         "Name":{
           "shape":"DashboardName",
-          "documentation":"<p>A display name for the dataset.</p>"
+          "documentation":"<p>A display name for the dashboard.</p>"
         },
         "Version":{
           "shape":"DashboardVersion",
@@ -2327,6 +2345,8 @@
     "DashboardErrorType":{
       "type":"string",
       "enum":[
+        "ACCESS_DENIED",
+        "SOURCE_NOT_FOUND",
         "DATA_SET_NOT_FOUND",
         "INTERNAL_FAILURE",
         "PARAMETER_VALUE_INCOMPATIBLE",
@@ -2336,6 +2356,10 @@
         "COLUMN_GEOGRAPHIC_ROLE_MISMATCH",
         "COLUMN_REPLACEMENT_MISSING"
       ]
+    },
+    "DashboardFilterAttribute":{
+      "type":"string",
+      "enum":["QUICKSIGHT_USER"]
     },
     "DashboardName":{
       "type":"string",
@@ -2360,6 +2384,30 @@
         }
       },
       "documentation":"<p>Dashboard publish options.</p>"
+    },
+    "DashboardSearchFilter":{
+      "type":"structure",
+      "required":["Operator"],
+      "members":{
+        "Operator":{
+          "shape":"FilterOperator",
+          "documentation":"<p>The comparison operator that you want to use as a filter. For example, <code>\"Operator\": \"StringEquals\"</code>.</p>"
+        },
+        "Name":{
+          "shape":"DashboardFilterAttribute",
+          "documentation":"<p>The name of the value that you want to use as a filter. For example, <code>\"Name\": \"QUICKSIGHT_USER\"</code>. </p>"
+        },
+        "Value":{
+          "shape":"String",
+          "documentation":"<p>The value of the named item, in this case <code>QUICKSIGHT_USER</code>, that you want to use as a filter. For example, <code>\"Value\": \"arn:aws:quicksight:us-east-1:1:user/default/UserName1\"</code>. </p>"
+        }
+      },
+      "documentation":"<p>A filter that you apply when searching for dashboards. </p>"
+    },
+    "DashboardSearchFilterList":{
+      "type":"list",
+      "member":{"shape":"DashboardSearchFilter"},
+      "max":1
     },
     "DashboardSourceEntity":{
       "type":"structure",
@@ -2462,6 +2510,10 @@
           "shape":"Arn",
           "documentation":"<p>Source entity ARN.</p>"
         },
+        "DataSetArns":{
+          "shape":"DataSetArnsList",
+          "documentation":"<p>The Amazon Resource Numbers (ARNs) for the datasets that are associated with a version of the dashboard.</p>"
+        },
         "Description":{
           "shape":"VersionDescription",
           "documentation":"<p>Description.</p>"
@@ -2557,6 +2609,11 @@
         }
       },
       "documentation":"<p>Dataset.</p>"
+    },
+    "DataSetArnsList":{
+      "type":"list",
+      "member":{"shape":"Arn"},
+      "max":100
     },
     "DataSetConfiguration":{
       "type":"structure",
@@ -4064,6 +4121,10 @@
       },
       "documentation":"<p>A transform operation that filters rows based on a condition.</p>"
     },
+    "FilterOperator":{
+      "type":"string",
+      "enum":["StringEquals"]
+    },
     "GeoSpatialColumnGroup":{
       "type":"structure",
       "required":[
@@ -4718,7 +4779,7 @@
       "members":{
         "DashboardSummaryList":{
           "shape":"DashboardSummaryList",
-          "documentation":"<p>A structure that contains all of the dashboards shared with the user. This structure provides basic information about the dashboards.</p>"
+          "documentation":"<p>A structure that contains all of the dashboards in your AWS account. This structure provides basic information about the dashboards.</p>"
         },
         "NextToken":{
           "shape":"String",
@@ -5853,7 +5914,7 @@
         },
         "SessionName":{
           "shape":"RoleSessionName",
-          "documentation":"<p>You need to use this parameter only when you register one or more users using an assumed IAM role. You don't need to provide the session name for other scenarios, for example when you are registering an IAM user or an Amazon QuickSight user. You can register multiple users using the same IAM role if each user has a different session name. For more information on assuming IAM roles, see <a href=\"https://docs.aws.example.com/cli/latest/reference/sts/assume-role.html\"> <code>assume-role</code> </a> in the <i>AWS CLI Reference.</i> </p>"
+          "documentation":"<p>You need to use this parameter only when you register one or more users using an assumed IAM role. You don't need to provide the session name for other scenarios, for example when you are registering an IAM user or an Amazon QuickSight user. You can register multiple users using the same IAM role if each user has a different session name. For more information on assuming IAM roles, see <a href=\"https://awscli.amazonaws.com/v2/documentation/api/latest/reference/sts/assume-role.html\"> <code>assume-role</code> </a> in the <i>AWS CLI Reference.</i> </p>"
         },
         "AwsAccountId":{
           "shape":"AwsAccountId",
@@ -6136,6 +6197,55 @@
         }
       },
       "documentation":"<p>A physical table type for as S3 data source.</p>"
+    },
+    "SearchDashboardsRequest":{
+      "type":"structure",
+      "required":[
+        "AwsAccountId",
+        "Filters"
+      ],
+      "members":{
+        "AwsAccountId":{
+          "shape":"AwsAccountId",
+          "documentation":"<p>The ID of the AWS account that contains the user whose dashboards you're searching for. </p>",
+          "location":"uri",
+          "locationName":"AwsAccountId"
+        },
+        "Filters":{
+          "shape":"DashboardSearchFilterList",
+          "documentation":"<p>The filters to apply to the search. Currently, you can search only by user name. For example, <code>\"Filters\": [ { \"Name\": \"QUICKSIGHT_USER\", \"Operator\": \"StringEquals\", \"Value\": \"arn:aws:quicksight:us-east-1:1:user/default/UserName1\" } ]</code> </p>"
+        },
+        "NextToken":{
+          "shape":"String",
+          "documentation":"<p>The token for the next set of results, or null if there are no more results.</p>"
+        },
+        "MaxResults":{
+          "shape":"MaxResults",
+          "documentation":"<p>The maximum number of results to be returned per request.</p>"
+        }
+      }
+    },
+    "SearchDashboardsResponse":{
+      "type":"structure",
+      "members":{
+        "DashboardSummaryList":{
+          "shape":"DashboardSummaryList",
+          "documentation":"<p>The list of dashboards owned by the user specified in <code>Filters</code> in your request.</p>"
+        },
+        "NextToken":{
+          "shape":"String",
+          "documentation":"<p>The token for the next set of results, or null if there are no more results.</p>"
+        },
+        "Status":{
+          "shape":"StatusCode",
+          "documentation":"<p>The HTTP status of the request.</p>",
+          "location":"statusCode"
+        },
+        "RequestId":{
+          "shape":"String",
+          "documentation":"<p>The AWS request ID for this operation.</p>"
+        }
+      }
     },
     "ServiceNowParameters":{
       "type":"structure",
@@ -6455,6 +6565,7 @@
     "TemplateErrorType":{
       "type":"string",
       "enum":[
+        "SOURCE_NOT_FOUND",
         "DATA_SET_NOT_FOUND",
         "INTERNAL_FAILURE"
       ]
@@ -6582,7 +6693,7 @@
       "members":{
         "Arn":{
           "shape":"Arn",
-          "documentation":"<p>The ARN of the template version.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the template version.</p>"
         },
         "VersionNumber":{
           "shape":"VersionNumber",

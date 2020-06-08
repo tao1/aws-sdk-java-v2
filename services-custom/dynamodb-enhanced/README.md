@@ -2,10 +2,6 @@
 
 Mid-level DynamoDB mapper/abstraction for Java using the v2 AWS SDK.
 
-Warning: This package is provided for preview and comment purposes only.
-It is not asserted to be stable or correct, and is subject to frequent
-breaking changes.
-
 ## Getting Started
 All the examples below use a fictional Customer class. This class is
 completely made up and not part of this library. Any search or key
@@ -13,54 +9,68 @@ values used are also completely arbitrary.
 
 ### Initialization
 1. Create or use a java class for mapping records to and from the
-   database table. The class does not need to conform to Java bean
-   standards but you will need getters and setters to all the attributes
-   you want to map. Here's an example :-
+   database table. At a minimum you must annotate the class so that
+   it can be used as a DynamoDb bean, and also the property that
+   represents the primary partition key of the table. Here's an example:-
    ```java
+   @DynamoDbBean
    public class Customer {
        private String accountId;
-       private int subId;            // you could also use Integer here
+       private int subId;            // primitive types are supported
        private String name;
-       private String createdDate;
+       private Instant createdDate;
        
+       @DynamoDbPartitionKey
        public String getAccountId() { return this.accountId; }
        public void setAccountId(String accountId) { this.accountId = accountId; }
        
+       @DynamoDbSortKey
        public int getSubId() { return this.subId; }
        public void setSubId(int subId) { this.subId = subId; }
        
+       // Defines a GSI (customers_by_name) with a partition key of 'name'
+       @DynamoDbSecondaryPartitionKey(indexNames = "customers_by_name")
        public String getName() { return this.name; }
        public void setName(String name) { this.name = name; }
        
-       public String getCreatedDate() { return this.createdDate; }
-       public void setCreatedDate(String createdDate) { this.createdDate = createdDate; }
+       // Defines an LSI (customers_by_date) with a sort key of 'createdDate' and also declares the 
+       // same attribute as a sort key for the GSI named 'customers_by_name'
+       @DynamoDbSecondarySortKey(indexNames = {"customers_by_date", "customers_by_name"})
+       public Instant getCreatedDate() { return this.createdDate; }
+       public void setCreatedDate(Instant createdDate) { this.createdDate = createdDate; }
    }
    ```
    
-2. Create a static TableSchema for your class. You could put this in the
-   class itself, or somewhere else :-
+2. Create a TableSchema for your class. For this example we are using the 'bean' TableSchema that will scan your bean
+   class and use the annotations to infer the table structure and attributes :
+   ```java
+   static final TableSchema<Customer> CUSTOMER_TABLE_SCHEMA = TableSchema.fromBean(Customer.class);
+   ```
+   
+   If you would prefer to skip the slightly costly bean inference for a faster solution, you can instead declare your 
+   schema directly and let the compiler do the heavy lifting. If you do it this way, your class does not need to follow
+   bean naming standards nor does it need to be annotated. This example is equivalent to the bean example : 
    ```java
    static final TableSchema<Customer> CUSTOMER_TABLE_SCHEMA =
-     StaticTableSchema.builder(Customer.class)
-       .newItemSupplier(Customer::new)       // Tells the mapper how to make new objects when reading items
-       .attributes(
-         stringAttribute("account_id", 
-                         Customer::getAccountId, 
-                         Customer::setAccountId)
-            .as(primaryPartitionKey()),                                                  // primary partition key         
-         integerNumberAttribute("sub_id", 
-                                Customer::getSubId, 
-                                Customer::setSubId)
-            .as(primarySortKey()),                                                       // primary sort key
-         stringAttribute("name", 
-                         Customer::getName, 
-                         Customer::setName)
-            .as(secondaryPartitionKey("customers_by_name")),                             // GSI partition key
-         stringAttribute("created_date", 
-                         Customer::getCreatedDate, 
-                         Customer::setCreatedDate)
-            .as(secondarySortKey("customers_by_date"), 
-                secondarySortKey("customers_by_name")))              // Sort key for both the LSI and the GSI
+     TableSchema.builder(Customer.class)
+       .newItemSupplier(Customer::new)
+       .addAttribute(String.class, a -> a.name("account_id")
+                                         .getter(Customer::getAccountId)
+                                         .setter(Customer::setAccountId)
+                                         .tags(primaryPartitionKey()))
+       .addAttribute(Integer.class, a -> a.name("sub_id")
+                                          .getter(Customer::getSubId)
+                                          .setter(Customer::setSubId)
+                                          .tags(primarySortKey()))
+       .addAttribute(String.class, a -> a.name("name")
+                                         .getter(Customer::getName)
+                                         .setter(Customer::setName)
+                                         .tags(secondaryPartitionKey("customers_by_name")))
+       .addAttribute(Instant.class, a -> a.name("created_date")
+                                          .getter(Customer::getCreatedDate)
+                                          .setter(Customer::setCreatedDate)
+                                          .tags(secondarySortKey("customers_by_date"),
+                                                secondarySortKey("customers_by_name")))
        .build();
    ```
    
@@ -80,78 +90,71 @@ values used are also completely arbitrary.
  
 ### Common primitive operations
 These all strongly map to the primitive DynamoDB operations they are
-named after. These examples are the most simple variants of each
-operation possible. These commands can be customized by using the
-builders provided for each command and offer most of the features
-available in the low-level DynamoDB SDK client.
+named after. The examples below are the most simple variants of each
+operation possible. Each operation can be further customized by passing 
+in an enhanced request object. These enhanced request objects offer most 
+of the features available in the low-level DynamoDB SDK client and are
+fully documented in the Javadoc of the interfaces referenced in these examples.
 
    ```java
    // CreateTable
-   customerTable.createTable(CreateTableEnhancedRequest.create());
+   customerTable.createTable();
    
    // GetItem
-   Customer customer = customerTable.getItem(GetItemEnhancedRequest.create(Key.create(stringValue("a123"))));
-   
+   Customer customer = customerTable.getItem(Key.builder().partitionValue("a123").build());
+
    // UpdateItem
-   Customer updatedCustomer = customerTable.updateItem(UpdateItemEnhancedRequest.create(customer));
+   Customer updatedCustomer = customerTable.updateItem(customer);
    
    // PutItem
-   customerTable.putItem(PutItemEnhancedRequest.create(customer));
+   customerTable.putItem(customer);
    
    // DeleteItem
-   Customer deletedCustomer = customerTable.deleteItem(DeleteItemEnhancedRequest.create(Key.create(stringValue("a123"), numberValue(456))));
+   Customer deletedCustomer = customerTable.deleteItem(Key.builder().partitionValue("a123").sortValue(456).build());
    
    // Query
-   Iterable<Page<Customer>> customers = customerTable.query(QueryEnhancedRequest.create(equalTo(Key.create(stringValue("a123")))));
-   
+   PageIterable<Customer> customers = customerTable.query(equalTo(k -> k.partitionValue("a123")));
+
    // Scan
-   Iterable<Page<Customer>> customers = customerTable.scan(ScanEnhancedRequest.create());
+   PageIterable<Customer> customers = customerTable.scan();
    
    // BatchGetItem
-   batchResults = enhancedClient.batchGetItem(
-       BatchGetItemEnhancedRequest.builder().addReadBatch(ReadBatch.builder(Customer.class)
-                                                                   .mappedTableResource(customerTable)
-                                                                   .addGetItem(GetItemEnhancedRequest.create(key1))
-                                                                   .addGetItem(GetItemEnhancedRequest.create(key2))
-                                                                   .addGetItem(GetItemEnhancedRequest.create(key3))
-                                                                   .build())
-                                  .build());
+   BatchGetResultPageIterable batchResults = enhancedClient.batchGetItem(r -> r.addReadBatch(ReadBatch.builder(Customer.class)
+                                                                               .mappedTableResource(customerTable)
+                                                                               .addGetItem(key1)
+                                                                               .addGetItem(key2)
+                                                                               .addGetItem(key3)
+                                                                               .build()));
    
    // BatchWriteItem
-   batchResults = enhancedClient.batchWriteItem(
-       BatchWriteItemEnhancedRequest.builder().addWriteBatch(WriteBatch.builder(Customer.class)
-                                                                       .mappedTableResource(customerTable)
-                                                                       .putItem(PutItemEnhancedRequest.create(item))
-                                                                       .deleteItem(DeleteItemEnhancedRequest.create(key1))
-                                                                       .deleteItem(DeleteItemEnhancedRequest.create(key2))
-                                                                       .build())
-                                    .build());
+   batchResults = enhancedClient.batchWriteItem(r -> r.addWriteBatch(WriteBatch.builder(Customer.class)
+                                                                               .mappedTableResource(customerTable)
+                                                                               .addPutItem(customer)
+                                                                               .addDeleteItem(key1)
+                                                                               .addDeleteItem(key1)
+                                                                               .build()));
    
    // TransactGetItems
-   transactResults = enhancedClient.transactGetItems(
-       TransactGetItemsEnhancedRequest.builder()
-                                      .addGetItem(customerTable, GetItemEnhancedRequest.create(Key.create(key1)))
-                                      .addGetItem(customerTable, GetItemEnhancedRequest.create(Key.create(key2)))
-                                      .build());
+   transactResults = enhancedClient.transactGetItems(r -> r.addGetItem(customerTable, key1)
+                                                           .addGetItem(customerTable, key2));
    
    // TransactWriteItems
-   enhancedClient.transactWriteItems(
-       TransactWriteItemsEnhancedRequest.builder()
-                                        .addConditionCheck(customerTable, ConditionCheck.create(orderKey, conditionExpression))
-                                        .addUpdateItem(customerTable, UpdateItemEnhancedRequest.create(customer))
-                                        .addDeleteItem(customerTable, DeleteItemEnhancedRequest.create(key))
-                                        .build());
+   enhancedClient.transactWriteItems(r -> r.addConditionCheck(customerTable, 
+                                                              i -> i.key(orderKey)
+                                                                    .conditionExpression(conditionExpression))
+                                           .addUpdateItem(customerTable, customer)
+                                           .addDeleteItem(customerTable, key));
 ```
    
 ### Using secondary indices
 Certain operations (Query and Scan) may be executed against a secondary
 index. Here's an example of how to do this:
-   ```
+   ```java
    DynamoDbIndex<Customer> customersByName = customerTable.index("customers_by_name");
        
-   Iterable<Page<Customer>> customersWithName = customersByName.query(QueryEnhancedRequest.create(equalTo(Key.create(stringValue("Smith")))));
+   PageIterable<Customer> customersWithName = 
+       customersByName.query(r -> r.queryConditional(equalTo(k -> k.partitionValue("Smith"))));
    ```
-
 ### Non-blocking asynchronous operations
 If your application requires non-blocking asynchronous calls to
 DynamoDb, then you can use the asynchronous implementation of the
@@ -172,7 +175,7 @@ key differences:
    application can then do other work without having to block on the
    result:
    ```java
-   CompletableFuture<Customer> result = mappedTable.getItem(GetItemEnhancedRequest.create(customerKey));
+   CompletableFuture<Customer> result = mappedTable.getItem(r -> r.key(customerKey));
    // Perform other work here
    return result.join();   // now block and wait for the result
    ```
@@ -182,26 +185,39 @@ key differences:
    application can then subscribe a handler to that publisher and deal
    with the results asynchronously without having to block:
    ```java
-   SdkPublisher<Customer> results = mappedTable.query(QueryEnhancedRequest.create(equalTo(Key.create(stringValue("a123")))));
+   PagePublisher<Customer> results = mappedTable.query(r -> r.queryConditional(equalTo(k -> k.partitionValue("Smith"))));
    results.subscribe(myCustomerResultsProcessor);
    // Perform other work and let the processor handle the results asynchronously
    ```
 
-
-### Using extensions
+## Using extensions
 The mapper supports plugin extensions to provide enhanced functionality
-beyond the simple primitive mapped operations. Only one extension can be
-loaded into a DynamoDbEnhancedClient. Any number of extensions can be chained
-together in a specific order into a single extension using a
-ChainExtension. Extensions have two hooks, beforeWrite() and
+beyond the simple primitive mapped operations. Extensions have two hooks, beforeWrite() and
 afterRead(); the former can modify a write operation before it happens,
 and the latter can modify the results of a read operation after it
 happens. Some operations such as UpdateItem perform both a write and
 then a read, so call both hooks.
 
-#### VersionedRecordExtension
+Extensions are loaded in the order they are specified in the enhanced client builder. This load order can be important,
+as one extension can be acting on values that have been transformed by a previous extension. By default, just the
+VersionedRecordExtension will be loaded, however you can override this behavior on the client builder and load any
+extensions you like or specify none if you do not want the default bundled VersionedRecordExtension.
 
-This extension will increment and track a record version number as
+In this example, a custom extension named 'verifyChecksumExtension' is being loaded after the VersionedRecordExtension
+which is usually loaded by default by itself:
+```java
+DynamoDbEnhancedClientExtension versionedRecordExtension = VersionedRecordExtension.builder().build();
+
+DynamoDbEnhancedClient enhancedClient = 
+    DynamoDbEnhancedClient.builder()
+                          .dynamoDbClient(dynamoDbClient)
+                          .extensions(versionedRecordExtension, verifyChecksumExtension)
+                          .build();
+```
+
+### VersionedRecordExtension
+
+This extension is loaded by default and will increment and track a record version number as
 records are written to the database. A condition will be added to every
 write that will cause the write to fail if the record version number of
 the actual persisted record does not match the value that the
@@ -210,32 +226,159 @@ record updates, if another process updates a record between the time the
 first process has read the record and is writing an update to it then
 that write will fail. 
 
-To load the extension:
-```java
-DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder()
-                        .dynamoDbClient(dynamoDbClient)
-                        .extendWith(VersionedRecordExtension.builder().build())
-                        .build();
-```
-
 To tell the extension which attribute to use to track the record version
-number tag a numeric attribute in the TableSchema with the version()
-AttributeTag:
+number tag a numeric attribute in the TableSchema:
 ```java
-    integerNumberAttribute("version", 
-                           Customer::getVersion, 
-                           Customer::setVersion)
-        .as(version())          // Apply the 'version' tag to the attribute                         
+    @DynamoDbVersionAttribute
+    public Integer getVersion() {...};
+    public void setVersion(Integer version) {...};
+```
+Or using a StaticTableSchema:
+```java
+    .addAttribute(Integer.class, a -> a.name("version")
+                                       .getter(Customer::getVersion)
+                                       .setter(Customer::setVersion)
+                                        // Apply the 'version' tag to the attribute
+                                       .tags(versionAttribute())                         
 ```
 
-## Advanced scenarios
+## Advanced table schema features
+### Explicitly include/exclude attributes in DDB mapping
+#### Excluding attributes
+Ignore attributes that should not participate in mapping to DDB
+Mark the attribute with the @DynamoDbIgnore annotation:
+```java
+private String internalKey;
+
+@DynamoDbIgnore
+public String getInternalKey() { return this.internalKey; }
+public void setInternalKey(String internalKey) { return this.internalKey = internalKey;}
+```
+#### Including attributes
+Change the name used to store an attribute in DBB by explicitly marking it with the
+ @DynamoDbAttribute annotation and supplying a different name:
+```java
+private String internalKey;
+
+@DynamoDbAttribute("renamedInternalKey")
+public String getInternalKey() { return this.internalKey; }
+public void setInternalKey(String internalKey) { return this.internalKey = internalKey;}
+```
+
+### Control attribute conversion
+By default, the table schema provides converters for all primitive and many common Java types
+through a default implementation of the AttributeConverterProvider interface. This behavior
+can be changed both at the attribute converter provider level as well as for a single attribute.
+
+#### Provide custom attribute converter providers
+You can provide a single AttributeConverterProvider or a chain of ordered AttributeConverterProviders
+through the @DynamoDbBean 'converterProviders' annotation. Any custom AttributeConverterProvider must extend the AttributeConverterProvider 
+interface. 
+
+Note that if you supply your own chain of attribute converter providers, you will override
+the default converter provider (DefaultAttributeConverterProvider) and must therefore include it in the chain if you wish to
+use its attribute converters. It's also possible to annotate the bean with an empty array `{}`, thus
+disabling the usage of any attribute converter providers including the default, in which case
+all attributes must have their own attribute converters (see below).
+
+Single converter provider:
+```java
+@DynamoDbBean(converterProviders = ConverterProvider1.class)
+public class Customer {
+
+}
+```
+
+Chain of converter providers ending with the default (least priority):
+```java
+@DynamoDbBean(converterProviders = {
+   ConverterProvider1.class, 
+   ConverterProvider2.class,
+   DefaultAttributeConverterProvider.class})
+public class Customer {
+
+}
+```
+
+In the same way, adding a chain of attribute converter providers directly to a StaticTableSchema:
+```java
+private static final StaticTableSchema<Customer> CUSTOMER_TABLE_SCHEMA =
+  StaticTableSchema.builder(Customer.class)
+    .newItemSupplier(Customer::new)
+    .addAttribute(String.class, a -> a.name("name")
+                                     a.getter(Customer::getName)
+                                     a.setter(Customer::setName))
+    .attributeConverterProviders(converterProvider1, converterProvider2)
+    .build();
+```
+
+#### Override the mapping of a single attribute
+Supply an AttributeConverter when creating the attribute to directly override any
+converters provided by the table schema AttributeConverterProviders. Note that you will 
+only add a custom converter for that attribute; other attributes, even of the same
+type, will not use that converter unless explicitly specified for those other attributes. 
+
+Example:
+```java
+@DynamoDbBean
+public class Customer {
+    private String name;
+
+    @DynamoDbConvertedBy(CustomAttributeConverter.class)
+    public String getName() { return this.name; }
+    public void setName(String name) { this.name = name;}
+}
+```
+For StaticTableSchema:
+```java
+private static final StaticTableSchema<Customer> CUSTOMER_TABLE_SCHEMA =
+  StaticTableSchema.builder(Customer.class)
+    .newItemSupplier(Customer::new)
+    .addAttribute(String.class, a -> a.name("name")
+                                     a.getter(Customer::getName)
+                                     a.setter(Customer::setName)
+                                     a.attributeConverter(customAttributeConverter))
+    .build();
+```
+
 ### Flat map attributes from another class
 If the attributes for your table record are spread across several
 different Java objects, either through inheritance or composition, the
 static TableSchema implementation gives you a method of flat mapping
 those attributes and rolling them up into a single schema.
 
-To accomplish this using inheritance:-
+#### Using inheritance
+To accomplish flat map using inheritance, the only requirement is that
+both classes are annotated as a DynamoDb bean:
+
+```java
+@DynamoDbBean
+public class Customer extends GenericRecord {
+    private String name;
+    private GenericRecord record;
+
+    public String getName() { return this.name; }
+    public void setName(String name) { this.name = name;}
+
+    public String getRecord() { return this.record; }
+    public void setRecord(String record) { this.record = record;}
+}
+
+@DynamoDbBean
+public abstract class GenericRecord {
+    private String id;
+    private String createdDate;
+
+    public String getId() { return this.id; }
+    public void setId(String id) { this.id = id;}
+
+    public String getCreatedDate() { return this.createdDate; }
+    public void setCreatedDate(String createdDate) { this.createdDate = createdDate;}
+}
+
+```
+
+For StaticTableSchema, use the 'extend' feature to achieve the same effect:
 ```java
 @Data
 public class Customer extends GenericRecord {
@@ -250,53 +393,96 @@ public abstract class GenericRecord {
 
 private static final StaticTableSchema<GenericRecord> GENERIC_RECORD_SCHEMA =
   StaticTableSchema.builder(GenericRecord.class)
-    .attributes(
-          // The partition key will be inherited by the top level mapper
-      stringAttribute("id", GenericRecord::getId, GenericRecord::setId).as(primaryPartitionKey()),
-      stringAttribute("created_date", GenericRecord::getCreatedDate, GenericRecord::setCreatedDate))
-    .build();
+       // The partition key will be inherited by the top level mapper
+      .addAttribute(String.class, a -> a.name("id")
+                                        .getter(GenericRecord::getId)
+                                        .setter(GenericRecord::setId)
+                                        .tags(primaryPartitionKey()))
+      .addAttribute(String.class, a -> a.name("created_date")
+                                        .getter(GenericRecord::getCreatedDate)
+                                        .setter(GenericRecord::setCreatedDate))
+     .build();
     
 private static final StaticTableSchema<Customer> CUSTOMER_TABLE_SCHEMA =
   StaticTableSchema.builder(Customer.class)
     .newItemSupplier(Customer::new)
-    .attributes(
-      stringAttribute("name", Customer::getName, Customer::setName))
+    .addAttribute(String.class, a -> a.name("name")
+                                      .getter(Customer::getName)
+                                      .setter(Customer::setName))
     .extend(GENERIC_RECORD_SCHEMA)     // All the attributes of the GenericRecord schema are added to Customer
     .build();
 ```
+#### Using composition
 
-Using composition:
+Using composition, the @DynamoDbFlatten annotation flat maps the composite class:
+```java
+@DynamoDbBean
+public class Customer {
+    private String name;
+    private GenericRecord record;
+
+    public String getName() { return this.name; }
+    public void setName(String name) { this.name = name;}
+
+    @DynamoDbFlatten(dynamoDbBeanClass = GenericRecord.class)
+    public String getRecord() { return this.record; }
+    public void setRecord(String record) { this.record = record;}
+}
+
+@DynamoDbBean
+public class GenericRecord {
+    private String id;
+    private String createdDate;
+
+    public String getId() { return this.id; }
+    public void setId(String id) { this.id = id;}
+
+    public String getCreatedDate() { return this.createdDate; }
+    public void setCreatedDate(String createdDate) { this.createdDate = createdDate;}
+}
+```
+You can flatten as many different eligible classes as you like using the flatten annotation.
+The only constraints are that attributes must not have the same name when they are being rolled
+together, and there must never be more than one partition key, sort key or table name.
+
+Flat map composite classes using StaticTableSchema:
+
 ```java
 @Data
 public class Customer{
   private String name;
   private GenericRecord recordMetadata;
+  //getters and setters for all attributes
 }
 
 @Data
 public class GenericRecord {
   private String id;
   private String createdDate;
+  //getters and setters for all attributes
 }
 
 private static final StaticTableSchema<GenericRecord> GENERIC_RECORD_SCHEMA =
   StaticTableSchema.builder(GenericRecord.class)
-    .newItemSupplier(GenericRecord::new)
-    .attributes(
-      stringAttribute("id", GenericRecord::getId, GenericRecord::setId).as(primaryPartitionKey()),
-      stringAttribute("created_date", GenericRecord::getCreatedDate, GenericRecord::setCreatedDate))
-    .build();
+      .addAttribute(String.class, a -> a.name("id")
+                                        .getter(GenericRecord::getId)
+                                        .setter(GenericRecord::setId)
+                                        .tags(primaryPartitionKey()))
+      .addAttribute(String.class, a -> a.name("created_date")
+                                        .getter(GenericRecord::getCreatedDate)
+                                        .setter(GenericRecord::setCreatedDate))
+     .build();
     
 private static final StaticTableSchema<Customer> CUSTOMER_TABLE_SCHEMA =
   StaticTableSchema.builder(Customer.class)
     .newItemSupplier(Customer::new)
-    .attributes(stringAttribute("name", Customer::getName, Customer::setName))
+    .addAttribute(String.class, a -> a.name("name")
+                                      .getter(Customer::getName)
+                                      .setter(Customer::setName))
     // Because we are flattening a component object, we supply a getter and setter so the
     // mapper knows how to access it
-    .flatten(CUSTOMER_TABLE_SCHEMA, Customer::getRecordMetadata, Customer::setRecordMetadata)
+    .flatten(GENERIC_RECORD_SCHEMA, Customer::getRecordMetadata, Customer::setRecordMetadata)
     .build(); 
 ```
-You can flatten as many different eligible classes as you like using the
-builder pattern. The only constraints are that attributes must not have
-the same name when they are being rolled together, and there must never
-be more than one partition key, sort key or table name.
+Just as for annotations, you can flatten as many different eligible classes as you like using the
+builder pattern. 

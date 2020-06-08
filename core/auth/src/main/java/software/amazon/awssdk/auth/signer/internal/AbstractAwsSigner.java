@@ -59,7 +59,7 @@ public abstract class AbstractAwsSigner implements Signer {
                 return MessageDigest.getInstance("SHA-256");
             } catch (NoSuchAlgorithmException e) {
                 throw SdkClientException.builder()
-                        .message("Unable to get SHA256 Function" + e.getMessage())
+                        .message("Unable to get SHA256 Function " + e.getMessage())
                         .cause(e)
                         .build();
             }
